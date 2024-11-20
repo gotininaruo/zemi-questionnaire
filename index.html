@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>時給アンケート</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .question {
+            margin-bottom: 15px;
+        }
+    </style>
+    <script>
+        const results = [];
+
+        function getRandomX() {
+            const values = [1000, 1050, 1100, 1150, 1200, 1250, 1300, 1350, 1400, 1450, 1500, 1550, 1600];
+            return values[Math.floor(Math.random() * values.length)];
+        }
+
+        function getRandomY() {
+            const values = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+            return values[Math.floor(Math.random() * values.length)];
+        }
+
+        function loadSurvey() {
+            const surveyContainer = document.getElementById('surveyContainer');
+            surveyContainer.innerHTML = '';
+            results.length = 0;
+
+            for (let i = 0; i < 4; i++) {
+                const xValue = getRandomX();
+                results.push({ x: xValue, y: null, answer: null });
+
+                const question = document.createElement('div');
+                question.classList.add('question');
+                question.innerHTML = `
+                    <p>時給${xValue}円の場合、働きたいですか？</p>
+                    <label>
+                        <input type="radio" name="answer${i}" value="はい" onchange="saveAnswer(${i}, '${xValue}', null)"> はい
+                    </label>
+                    <label>
+                        <input type="radio" name="answer${i}" value="いいえ" onchange="saveAnswer(${i}, '${xValue}', null)"> いいえ
+                    </label>
+                `;
+                surveyContainer.appendChild(question);
+            }
+
+            for (let i = 4; i < 10; i++) {
+                const xValue = getRandomX();
+                const yValue = getRandomY();
+
+                results.push({ x: xValue, y: yValue, answer: null });
+
+                const question = document.createElement('div');
+                question.classList.add('question');
+                question.innerHTML = `
+                    <p>時給${xValue}円でシフトに入れる確率が${yValue}%の場合に働きたいですか？</p>
+                    <label>
+                        <input type="radio" name="answer${i}" value="はい" onchange="saveAnswer(${i}, '${xValue}', '${yValue}')"> はい
+                    </label>
+                    <label>
+                        <input type="radio" name="answer${i}" value="いいえ" onchange="saveAnswer(${i}, '${xValue}', '${yValue}')"> いいえ
+                    </label>
+                `;
+                surveyContainer.appendChild(question);
+            }
+        }
+
+        function saveAnswer(index, xValue, yValue) {
+            const answer = document.querySelector(`input[name="answer${index}"]:checked`);
+            if (answer) {
+                results[index].answer = answer.value;
+            }
+        }
+
+        async function submitSurvey() {
+            const allAnswered = results.every(result => result.answer !== null);
+            if (!allAnswered) {
+                alert("すべての質問に回答してください。");
+                return;
+            }
+
+            const surveyData = results.map(result => ({
+                x: result.x,
+                y: result.y,
+                answer: result.answer
+            }));
+
+            try {
+                const response = await fetch('YOUR_SCRIPT_URL', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: surveyData })
+                });
+
+                if (response.ok) {
+                    console.log('アンケート結果がスプレッドシートに送信されました。');
+                    document.getElementById('resultsContainer').innerHTML = '<h2>送信完了</h2><p>回答ありがとうございました。</p>';
+                } else {
+                    console.error('送信エラー:', response.statusText);
+                    alert("送信中にエラーが発生しました。");
+                }
+            } catch (error) {
+                console.error('送信エラー:', error);
+                alert("送信中にエラーが発生しました。");
+            }
+        }
+
+        window.onload = loadSurvey;
+    </script>
+</head>
+<body>
+    <h1>時給アンケート</h1>
+    <p>希望したシフト回数が10回の場合で、シフトに入れる確率が50%の時は、シフトに5回入れるということを意味します。</p>
+    <div id="surveyContainer"></div>
+    <button onclick="submitSurvey()">送信</button>
+    <div id="resultsContainer"></div>
+</body>
+</html>
